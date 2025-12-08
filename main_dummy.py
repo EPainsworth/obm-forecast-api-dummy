@@ -224,28 +224,11 @@ def get_top_lvl4(n: int = 10, sort_by: str = "euro"):
         for _, r in df_top.iterrows()
     ]
 
-## 💬 Samenvatting voor bestuurders
-@app.get("/summary", response_model=List[Summary])
-def get_summary():
-    """Geeft tekstuele toelichting per categorie (lvl3), interpreteerbaar door Copilot"""
-    summaries = []
-    for _, row in df_lvl3.iterrows():
-        trend = "boven budget" if row["Afwijking van budget (€)"] > 0 else "onder budget"
-        binnen = abs(row["Afwijking van budget (%)"]) < 10
-        kpi_check = "✅ binnen KPI" if binnen else "⚠️ buiten KPI"
-        toelichting = (
-            f"De categorie {row['lvl3']} ligt gemiddeld {row['Afwijking van budget (%)']:.2f}% "
-            f"{trend} t.o.v. het budget ({kpi_check})."
-        )
-        summaries.append({"lvl3": row["lvl3"], "Toelichting": toelichting})
-    return summaries
-
-
 ## 📈 KPI-overzicht
 @app.get("/kpi", response_model=KPIStatus)
 def get_kpi_status():
     """Geeft overzicht van KPI-naleving (<10% afwijking van budget)"""
-    return calc_kpi(df_lvl3)
+    return df_summary_fin()
 
 
 ## 🧠 Feature importance
@@ -270,7 +253,7 @@ def get_trend():
     )
     return trend.to_dict(orient="records")
 
-@app.get("/financial/summary", response_model=List[FinancialSummaryRow])
+@app.get("/summary", response_model=List[FinancialSummaryRow])
 def get_financial_summary():
     rows = []
     for _, r in df_summary_fin.iterrows():
@@ -287,6 +270,6 @@ def get_financial_summary():
         })
     return rows
 
-@app.get("/financial/summary/text", response_model=List[FinancialTextSummary])
+@app.get("/summary/text", response_model=List[FinancialTextSummary])
 def get_financial_text_summary():
     return df_text_fin.to_dict(orient="records")
