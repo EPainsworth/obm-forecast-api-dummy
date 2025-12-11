@@ -134,13 +134,21 @@ class FinancialTextSummary(BaseModel):
 
 
 # === 3️⃣ Helpers ===
-def calc_kpi(df: pd.DataFrame, kpi_threshold: float = 10.0):
-    within = (df["Afwijking van budget (%)"].abs() < kpi_threshold).sum()
+def calc_kpi(df: pd.DataFrame, threshold=10.0):
+    if "Verschil_jaar_%" not in df.columns:
+        df["Verschil_jaar_%"] = np.where(
+            df["Budget_jaar"] == 0, 0,
+            100 * (df["Realisatie_jaar_prognose"] - df["Budget_jaar"]) / df["Budget_jaar"]
+        )
+
+    within = (df["Verschil_jaar_%"].abs() < threshold).sum()
     total = len(df)
+    pct = (within / total) * 100 if total > 0 else 0
+
     return {
         "Aantal_binnen_KPI": int(within),
-        "Totaal_lvl3": total,
-        "Percentage_binnen_KPI": round((within / total) * 100, 2)
+        "Totaal_lvl3": int(total),
+        "Percentage_binnen_KPI": round(pct, 2)
     }
 
 
@@ -228,7 +236,7 @@ def get_top_lvl4(n: int = 10, sort_by: str = "euro"):
 @app.get("/kpi", response_model=KPIStatus)
 def get_kpi_status():
     """Geeft overzicht van KPI-naleving (<10% afwijking van budget)"""
-    return df_summary_fin()
+    return calc_kpi(df_summary_fin)
 
 
 ## 🧠 Feature importance
